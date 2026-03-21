@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: Lista de Tarefas — API REST
+  version: 2025-03-21
+  description: |-
+    Documentação das APIs do sistema de cadastro de tarefas (persistência em banco relacional).
+
+    Respostas utilizam exibição no padrão brasileiro para números e datas: `custo` e `somaCustos` como texto
+    (ex.: 1.500,50); `dataLimite` como DD/MM/AAAA.
+
+    Corpos de requisição: `custo` em JSON como número (ponto decimal); `dataLimite` no formato ISO AAAA-MM-DD.
+
+servers:
+  - url: http://localhost:8080
+    description: Desenvolvimento local
+
+paths:
+  /api/tarefas:
+    get:
+      tags:
+        - Tarefas
+      summary: Lista todas as tarefas ordenadas por apresentação e o somatório dos custos
+      description: |
+        Retorna os registros ordenados pelo campo ordem de apresentação.
+        Tarefas com custo maior ou igual a R$ 1.000,00 retornam `altoCusto: true` para destaque no cliente (ex.: fundo amarelo).
+      operationId: listarTarefas
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaTarefasResponse'
+        '500':
+          description: Internal Server Error
+
+    post:
+      tags:
+        - Tarefas
+      summary: Inclui uma nova tarefa
+      description: |-
+        Gera identificador e ordem de apresentação automaticamente (nova tarefa fica por último na listagem).
+        Não são permitidas duas tarefas com o mesmo nome.
+      operationId: criarTarefa
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TarefaCreateRequest'
+            examples:
+              tarefa_basica:
+                summary: Inclusão comum
+                description: Nome, custo e data limite preenchidos
+                value:
+                  nome: "Comprar material"
+                  custo: 150.75
+                  dataLimite: "2025-12-31"
+              tarefa_alto_custo:
+                summary: Tarefa com custo a partir de R$ 1.000,00
+                description: Na listagem, `altoCusto` virá true
+                value:
+                  nome: "Contratar fornecedor"
+                  custo: 2500.0
+                  dataLimite: "2026-06-15"
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TarefaResponse'
+        '400':
+          description: Bad Request
+        '409':
+          description: Conflict — nome duplicado ou violação de integridade
+        '500':
+          description: Internal Server Error
+
+  /api/tarefas/{id}:
+    put:
+      tags:
+        - Tarefas
+      summary: Atualiza nome, custo e data limite da tarefa
+      description: |-
+        Apenas os campos nome, custo e data limite podem ser alterados; todos são obrigatórios no corpo.
+        O novo nome não pode coincidir com o de outra tarefa já cadastrada.
+      operationId: atualizarTarefa
+      parameters:
+        - name: id
+          in: path
+          description: Identificador da tarefa
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TarefaUpdateRequest'
+            examples:
+              atualizacao_completa:
+                summary: Atualização dos três campos
+                value:
+                  nome: "Comprar material (revisado)"
+                  custo: 200.0
+                  dataLimite: "2025-11-30"
+        required: true
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TarefaResponse'
+        '400':
+          description: Bad Request
+        '404':
+          description: Not Found
+        '409':
+          description: Conflict — nome duplicado ou violação de integridade
+        '500':
+          description: Internal Server Error
+
+    delete:
+      tags:
+        - Tarefas
+      summary: Exclui a tarefa pelo identificador
+      description: |-
+        Remove o registro no banco. A confirmação com o usuário (Sim/Não) é responsabilidade do cliente.
+      operationId: excluirTarefa
+      parameters:
+        - name: id
+          in: path
+          description: Identificador da tarefa
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: No Content
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+
+  /api/tarefas/{id}/subir:
+    post:
+      tags:
+        - Tarefas
+      summary: Sobe a tarefa uma posição na ordem de apresentação
+      description: |-
+        Troca a ordem com a tarefa imediatamente anterior. A primeira tarefa da lista não pode subir.
+      operationId: subirTarefa
+      parameters:
+        - name: id
+          in: path
+          description: Identificador da tarefa
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request — não é possível subir (ex.: já é a primeira)
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+
+  /api/tarefas/{id}/descer:
+    post:
+      tags:
+        - Tarefas
+      summary: Desce a tarefa uma posição na ordem de apresentação
+      description: |-
+        Troca a ordem com a tarefa imediatamente seguinte. A última tarefa da lista não pode descer.
+      operationId: descerTarefa
+      parameters:
+        - name: id
+          in: path
+          description: Identificador da tarefa
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: No Content
+        '400':
+          description: Bad Request — não é possível descer (ex.: já é a última)
+        '404':
+          description: Not Found
+        '500':
+          description: Internal Server Error
+
+components:
+  schemas:
+    TarefaCreateRequest:
+      type: object
+      required:
+        - nome
+        - custo
+        - dataLimite
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          description: Nome da tarefa (único no sistema)
+          example: "Comprar material"
+        custo:
+          type: number
+          format: double
+          minimum: 0
+          description: Custo em R$ (maior ou igual a zero)
+          example: 150.75
+        dataLimite:
+          type: string
+          format: date
+          description: Data limite (yyyy-MM-dd)
+          example: "2025-12-31"
+
+    TarefaUpdateRequest:
+      type: object
+      required:
+        - nome
+        - custo
+        - dataLimite
+      properties:
+        nome:
+          type: string
+          minLength: 1
+          example: "Comprar material (revisado)"
+        custo:
+          type: number
+          format: double
+          minimum: 0
+          example: 200.0
+        dataLimite:
+          type: string
+          format: date
+          example: "2025-11-30"
+
+    TarefaResponse:
+      type: object
+      required:
+        - id
+        - nome
+        - custo
+        - dataLimite
+        - ordemApresentacao
+        - altoCusto
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 1
+        nome:
+          type: string
+          example: "Comprar material"
+        custo:
+          type: string
+          description: Valor formatado no padrão numérico brasileiro
+          example: "150,75"
+        dataLimite:
+          type: string
+          description: Data no formato DD/MM/AAAA
+          example: "31/12/2025"
+        ordemApresentacao:
+          type: integer
+          format: int32
+          example: 1
+        altoCusto:
+          type: boolean
+          description: true quando custo ≥ 1.000,00 (exibição diferenciada no cliente)
+          example: false
+
+    ListaTarefasResponse:
+      type: object
+      required:
+        - tarefas
+        - somaCustos
+      properties:
+        tarefas:
+          type: array
+          items:
+            $ref: '#/components/schemas/TarefaResponse'
+        somaCustos:
+          type: string
+          description: Soma dos custos no padrão numérico brasileiro
+          example: "3.250,75"
+
+    ProblemDetail:
+      type: object
+      description: RFC 7807 — corpo típico de erro da API (Spring)
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri

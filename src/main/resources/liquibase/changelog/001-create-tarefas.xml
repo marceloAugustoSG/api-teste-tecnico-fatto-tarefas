@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+		xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+	<changeSet id="listatarefas.001.01" author="api-lista-tarefas">
+		<createTable tableName="tarefas">
+			<column name="id" type="BIGINT" autoIncrement="true">
+				<constraints primaryKey="true" nullable="false"/>
+			</column>
+			<column name="nome" type="VARCHAR(500)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="custo" type="DECIMAL(19,2)">
+				<constraints nullable="false"/>
+			</column>
+			<column name="data_limite" type="DATE">
+				<constraints nullable="false"/>
+			</column>
+			<column name="ordem_apresentacao" type="INTEGER">
+				<constraints nullable="false"/>
+			</column>
+		</createTable>
+		<addUniqueConstraint
+				constraintName="uk_tarefas_nome"
+				tableName="tarefas"
+				columnNames="nome"/>
+		<addUniqueConstraint
+				constraintName="uk_tarefas_ordem_apresentacao"
+				tableName="tarefas"
+				columnNames="ordem_apresentacao"/>
+	</changeSet>
+
+</databaseChangeLog>
