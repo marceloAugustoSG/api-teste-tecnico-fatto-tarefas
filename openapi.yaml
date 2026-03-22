@@ -6,7 +6,7 @@ info:
     Documentação das APIs do sistema de cadastro de tarefas (persistência em banco relacional).
 
     Respostas utilizam exibição no padrão brasileiro para números e datas: `custo` e `somaCustos` como texto
-    (ex.: 1.500,50); `dataLimite` como DD/MM/AAAA.
+    monetário (ex.: R$ 1.500,50); `dataLimite` como DD/MM/AAAA.
 
     Corpos de requisição: `custo` em JSON como número (ponto decimal); `dataLimite` no formato ISO AAAA-MM-DD.
 
@@ -264,8 +264,8 @@ components:
           example: "Comprar material"
         custo:
           type: string
-          description: Valor formatado no padrão numérico brasileiro
-          example: "150,75"
+          description: Valor monetário formatado no padrão brasileiro (inclui símbolo R$)
+          example: "R$ 150,75"
         dataLimite:
           type: string
           description: Data no formato DD/MM/AAAA
@@ -291,8 +291,8 @@ components:
             $ref: '#/components/schemas/TarefaResponse'
         somaCustos:
           type: string
-          description: Soma dos custos no padrão numérico brasileiro
-          example: "3.250,75"
+          description: Soma dos custos no padrão monetário brasileiro (inclui símbolo R$)
+          example: "R$ 3.250,75"
 
     ProblemDetail:
       type: object

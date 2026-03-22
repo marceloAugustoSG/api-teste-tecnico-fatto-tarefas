@@ -1,0 +1,20 @@
+# Blueprint Render: Web Service (Docker) + variáveis (preencher secrets no painel após o deploy).
+# Banco: crie um projeto em https://neon.tech e copie host, usuário, senha e JDBC com ?sslmode=require
+services:
+  - type: web
+    name: api-lista-tarefas
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/tarefas
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: CORS_ALLOWED_ORIGIN_PATTERNS
+        sync: false
