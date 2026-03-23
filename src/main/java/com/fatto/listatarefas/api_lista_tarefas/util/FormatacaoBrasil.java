@@ -10,6 +10,11 @@ import java.util.Locale;
 public final class FormatacaoBrasil {
 
 	private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/uuuu");
+	private static final ThreadLocal<NumberFormat> FORMATO_MOEDA = ThreadLocal.withInitial(() -> {
+		NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("pt-BR"));
+		fmt.setRoundingMode(RoundingMode.HALF_UP);
+		return fmt;
+	});
 
 	private FormatacaoBrasil() {
 	}
@@ -23,8 +28,6 @@ public final class FormatacaoBrasil {
 			return null;
 		}
 		BigDecimal normalizado = valor.setScale(2, RoundingMode.HALF_UP);
-		NumberFormat fmt = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("pt-BR"));
-		fmt.setRoundingMode(RoundingMode.HALF_UP);
-		return fmt.format(normalizado);
+		return FORMATO_MOEDA.get().format(normalizado);
 	}
 }
